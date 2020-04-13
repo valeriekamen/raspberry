@@ -82,18 +82,9 @@ def make_farenheit(temp):
     t = re.sub("[^0-9]", "", temp)
     return str(int((9 * int(t))/5 + 32))
 
-def scroll_message(output):
+
+def show_message(output):
     scrollphat.write_string(output)
-    scrollphat.update()
-
-    while(True):
-        try:
-            scrollphat.scroll()
-            scrollphat.update()
-            time.sleep(0.2)
-        except KeyboardInterrupt:
-            return
-
 
 if(__name__ == '__main__'):
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -107,9 +98,16 @@ if(__name__ == '__main__'):
         weather = get_weather(coords)
         if weather.get("summary", None) is not None:
             print(weather)
-            output = "{summary} - L: {low} - H: {high} - Feel: {feelslike}".format(**weather)
-            logging.info(output)
-            scroll_message(output)
-
-            scrollphat.clear()
-            quit()
+            while(True):
+                try:
+                    show_message("its")
+                    time.sleep(2)
+                    scrollphat.clear()
+                    scrollphat.update()
+                    show_message("{feelslike}".format(**weather))
+                    time.sleep(2)
+                    scrollphat.clear()
+                    scrollphat.update()
+                except KeyboardInterrupt:
+                    scrollphat.clear()
+                    quit()

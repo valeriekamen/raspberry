@@ -22,7 +22,13 @@ def scroll_message(output):
     scrollphat.write_string(output)
     scrollphat.update()
     scrollphat.scroll()
-    return
+    scrollphat.clear()
+
+
+def update_next_bart():
+    next_barts_list = bart.get_bart()
+    next_barts_str = ', '.join(next_barts_list)
+    return next_barts_str
 
 
 if(__name__ == '__main__'):
@@ -34,11 +40,10 @@ if(__name__ == '__main__'):
 
     while (True):
         try:
-            next_barts_list = bart.get_bart()
-            next_barts_str = ', '.join(next_barts_list)
+            next_barts_str = update_next_bart()
             message = "Its {}. Bart in {}".format(feelslike, next_barts_str)
             scroll_message(message)
-            time.sleep(2)
+            time.sleep(20)
         except KeyboardInterrupt:
             break
 

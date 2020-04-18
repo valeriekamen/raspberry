@@ -21,8 +21,14 @@ def flash_cycle(output):
 def scroll_message(output):
     scrollphat.write_string(output)
     scrollphat.update()
-    scrollphat.scroll()
-    scrollphat.clear()
+
+    while(True):
+        try:
+            scrollphat.scroll()
+            scrollphat.update()
+            time.sleep(0.2)
+        except KeyboardInterrupt:
+            return
 
 
 def update_next_bart():
@@ -33,19 +39,26 @@ def update_next_bart():
 
 if(__name__ == '__main__'):
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-
     scrollphat.set_brightness(4)
     current_weather = weather.get_weather()
     feelslike = "{}".format(current_weather.get('feelslike'))
 
-    while (True):
-        try:
-            next_barts_str = update_next_bart()
-            message = "Its {}. Bart in {}".format(feelslike, next_barts_str)
-            scroll_message(message)
-            time.sleep(20)
-        except KeyboardInterrupt:
-            break
+    # while (True):
+    #     try:
+    #         next_barts_str = update_next_bart()
+    #         message = "Its {}. Bart in {}".format(feelslike, next_barts_str)
+    #         scroll_message(message)
+    #         time.sleep(20)
+    #     except KeyboardInterrupt:
+    #         break
 
-    scrollphat.clear()
-    quit()
+    while True:
+        try:
+            scrollphat.scroll()
+            time.sleep(2)
+            next_barts_str = update_next_bart()
+            msg = "Its {}. Bart in {}".format(feelslike, next_barts_str)
+            scrollphat.write_string(msg)
+        except KeyboardInterrupt:
+            scrollphat.clear()
+            break

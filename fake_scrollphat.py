@@ -16,3 +16,7 @@ def clear():
 
 def scroll():
     return ''
+
+
+def buffer_len():
+    return 100

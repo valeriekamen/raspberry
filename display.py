@@ -21,7 +21,14 @@ def flash_cycle(output):
 def scroll_message(output):
     scrollphat.write_string(output)
     scrollphat.update()
-    scrollphat.scroll()
+
+    while(True):
+        try:
+            scrollphat.scroll()
+            scrollphat.update()
+            time.sleep(0.2)
+        except KeyboardInterrupt:
+            return
 
 
 if(__name__ == '__main__'):
@@ -37,7 +44,7 @@ if(__name__ == '__main__'):
             next_barts_str = ', '.join(next_barts_list)
             message = "Its {}. Bart in {}".format(feelslike, next_barts_str)
             time.sleep(2)
-            scroll_message(message)
-        except KeyboardInterrupt:
+            scroll_message(output)
+
             scrollphat.clear()
             quit()

@@ -34,4 +34,3 @@ if(__name__ == '__main__'):
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
     weather = get_weather()
-    print(weather)

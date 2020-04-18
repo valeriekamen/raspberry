@@ -15,7 +15,7 @@ def get_bart():
             j = r.json()
             station_data = j['root']['station'][0]['etd']
             try:
-                return get_next_sf_departure(station_data)
+                return get_next_departures(station_data)
             except Exception:
                 return "--"
     except requests.exceptions.RequestException as e:
@@ -25,7 +25,7 @@ def get_bart():
     return "?"
 
 
-def get_next_sf_departure(station_data):
+def get_all_departures(station_data):
     minutes = []
     for item in station_data:
         estimate = item['estimate']
@@ -33,11 +33,19 @@ def get_next_sf_departure(station_data):
             direction = e.get('direction')
             color = e.get('color')
             if color in ('YELLOW', 'RED', 'WHITE') and direction == 'South':
-                minutes.append(e.get('minutes'))
-    # print(max(minutes))
-    # "Leaving" is printed when train is leaving
-    # also should consider only returning values that are 8 min and higher, since cannot make anything sooner
-    return max(minutes)
+                mins = e.get('minutes')
+                if not mins == 'Leaving':
+                    minutes.append(mins)
+    return minutes
+
+
+def get_next_departures(station_data):
+    minutes = get_all_departures(station_data)
+    walking_time = 8  # make arg later
+    mins_in_walking_time = [m for m in minutes if int(m) - walking_time > 0]
+    mins_in_walking_time.sort()
+    print(mins_in_walking_time[-2:])
+    return mins_in_walking_time[-2:]
 
 
 if(__name__ == '__main__'):

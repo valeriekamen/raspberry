@@ -12,3 +12,7 @@ def write_string(output):
 
 def clear():
     return ''
+
+
+def scroll():
+    return ''

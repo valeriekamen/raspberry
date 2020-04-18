@@ -10,11 +10,18 @@ elif os.uname().sysname == 'Darwin':
     import fake_scrollphat as scrollphat
 
 
-def scroll_cycle(output):
+def flash_cycle(output):
+    # no scroll, just prints one message at a time
     scrollphat.update()
     scrollphat.write_string(output)
     time.sleep(2)
     scrollphat.clear()
+
+
+def scroll_message(output):
+    scrollphat.write_string(output)
+    scrollphat.update()
+    scrollphat.scroll()
 
 
 if(__name__ == '__main__'):
@@ -22,15 +29,15 @@ if(__name__ == '__main__'):
 
     scrollphat.set_brightness(4)
     current_weather = weather.get_weather()
+    feelslike = "{}".format(current_weather.get('feelslike'))
 
     while(True):
         try:
-            next_bart = bart.get_bart()
-            scroll_cycle("its")
-            scroll_cycle("{feelslike}".format(**current_weather))
-            scroll_cycle("Bart")
-            scroll_cycle("{}".format(next_bart))
-            time.sleep(5)
+            next_barts_list = bart.get_bart()
+            next_barts_str = ', '.join(next_barts_list)
+            message = "Its {}. Bart in {}".format(feelslike, next_barts_str)
+            time.sleep(2)
+            scroll_message(message)
         except KeyboardInterrupt:
             scrollphat.clear()
             quit()

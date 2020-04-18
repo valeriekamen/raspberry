@@ -1,68 +1,15 @@
-#!/usr/bin/env python
-
-# requires: netifaces for looking up IP in readable way
-# requires: requests human readable HTTP requests
-# requires: geocoder for converting locatio to coords
-
 import os
-import json
-import time
 import re
-import urllib
 import logging
-from sys import exit
-
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    raise ImportError("This script requires the beautifulsoup4 module")
-
-try:
-    import requests
-except ImportError:
-    raise ImportError("This script requires the requests module")
-
-try:
-    import geocoder
-except ImportError:
-    raise ImportError("This script requires the geocoder module")
+from bs4 import BeautifulSoup
+import requests
 
 
-import scrollphat
-
-
-def get_location():
-    res = requests.get('http://ipinfo.io')
-    if(res.status_code == 200):
-        json_data = json.loads(res.text)
-        logging.info("Location: {}, {}".format(json_data["city"], json_data["country"]))
-        return json_data
-    return {}
-
-
-# Python 2 vs 3 breaking changes.
-def encode(qs):
-    val = ""
-    try:
-        val = urllib.urlencode(qs).replace("+", "%20")
-    except AttributeError:
-        val = urllib.parse.urlencode(qs).replace("+", "%20")
-    return val
-
-
-# Convert a city name and country code to latitude and longitude
-def get_coords(address):
-    g = geocoder.arcgis(address)
-    coords = g.latlng
-    logging.info("Location coordinates: %s", coords)
-    return coords
-
-
-# Query Dark Sky (https://darksky.net/) to scrape current weather data
-def get_weather(coords):
+def get_weather():
     weather = {}
     try:
-        url = "https://darksky.net/forecast/{}/uk212/en".format(",".join([str(c) for c in coords]))
+        coords = '37.80508000000003,-122.27306999999996'  # 3906 Ruby, Oakland CA
+        url = "https://darksky.net/forecast/{}/uk212/en".format(coords)
         logging.info("Requesting weather from: {}".format(url))
         res = requests.get(url)
         if res.status_code == 200:
@@ -83,31 +30,8 @@ def make_farenheit(temp):
     return str(int((9 * int(t))/5 + 32))
 
 
-def show_message(output):
-    scrollphat.write_string(output)
-
 if(__name__ == '__main__'):
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
-    scrollphat.set_brightness(4)
-    location = get_location()
-    location_string = location["city"] + ", " + location["country"]
-
-    if location.get("city", None) is not None:
-        coords = get_coords(location_string)
-        weather = get_weather(coords)
-        if weather.get("summary", None) is not None:
-            print(weather)
-            while(True):
-                try:
-                    show_message("its")
-                    time.sleep(2)
-                    scrollphat.clear()
-                    scrollphat.update()
-                    show_message("{feelslike}".format(**weather))
-                    time.sleep(2)
-                    scrollphat.clear()
-                    scrollphat.update()
-                except KeyboardInterrupt:
-                    scrollphat.clear()
-                    quit()
+    weather = get_weather()
+    # print(weather)

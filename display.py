@@ -4,8 +4,10 @@ import logging
 import os
 import time
 
-# import scrollphat
-import fake_scrollphat as scrollphat
+if os.uname().sysname == 'Linux':
+    import scrollphat
+elif os.uname().sysname == 'Darwin':
+    import fake_scrollphat as scrollphat
 
 
 def scroll_cycle(output):

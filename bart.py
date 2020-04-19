@@ -4,85 +4,123 @@ import os
 import requests
 import typing
 import logging
+from enum import Enum
+from collections import namedtuple
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 
-class BartDepartures():
-    def __init__(self, station: str = 'mcar',
-                 walking_time: int = 8,
-                 number_of_trains: int = 2,
-                 direction: str = 'South',
-                 only_sf_bound: bool = True,
-                 debug: bool = False) -> None:
-        self.station = station  # List of statation codes: https://api.bart.gov/docs/overview/abbrev.aspx
-        self.walking_time = walking_time  # Time in minutes until you can be at the station
-        self.number_of_trains = number_of_trains  # How many train arrival times to show
-        self.direction = direction  # North or South only
-        self.only_sf_bound = only_sf_bound  # certain colors on SF track
-        self.debug = debug
+class Direction(Enum):
+    NORTH = 'North'
+    SOUTH = 'South'
 
-    def get_bart(self):
+
+class Colors(Enum):
+    YELLOW = 'YELLOW'
+    RED = 'RED'
+    WHITE = 'WHITE'
+    ORANGE = 'ORANGE'
+
+
+Estimate = namedtuple('Estimate', ['color', 'direction', 'mins'])
+
+test_json = '''
+{
+  "?xml": {
+    "@version": "1.0",
+    "@encoding": "utf-8"
+  },
+  "root": {
+    "@id": "1",
+    "uri": {
+      "#cdata-section": "http://api.bart.gov/api/etd.aspx?cmd=etd&orig=mcar&json=y"
+    },
+    "date": "04/18/2020",
+    "time": "04:15:31 PM PDT",
+    "station": [
+      {
+        "name": "MacArthur",
+        "abbr": "MCAR",
+        "etd": [
+          {
+            "destination": "Antioch",
+            "abbreviation": "ANTC",
+            "limited": "0",
+            "estimate": [
+              {
+                "minutes": "2",
+                "platform": "3",
+                "direction": "North",
+                "length": "10",
+                "color": "YELLOW",
+                "hexcolor": "#ffff33",
+                "bikeflag": "1",
+                "delay": "0"
+              },
+              {
+                "minutes": "22",
+                "platform": "3",
+                "direction": "North",
+                "length": "10",
+                "color": "YELLOW",
+                "hexcolor": "#ffff33",
+                "bikeflag": "1",
+                "delay": "0"
+              },
+              {
+                "minutes": "42",
+                "platform": "3",
+                "direction": "North",
+                "length": "10",
+                "color": "YELLOW",
+                "hexcolor": "#ffff33",
+                "bikeflag": "1",
+                "delay": "0"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "message": ""
+  }
+}
+'''
+
+SF_BOUND_COLORS = (Colors.YELLOW, Colors.RED, Colors.WHITE)
+HOME_BOUND_COLORS = (Colors.YELLOW)  # todo more colors
+
+
+class StationData:
+    def __init__(self, station_data):
+        self.estimates = []
+        for destination in station_data:
+            for estimate in destination['estimate']:
+                if not estimate['minutes'] == 'Leaving':
+                    self.estimates.append(Estimate(color=Colors(estimate['color']), mins=int(
+                        estimate['minutes']), direction=Direction(estimate['direction'])))
+
+    def get_by_colors_and_direction(self, colors: typing.List[Colors],  direction: Direction) -> typing.List[Estimate]:
+        estimates = [e for e in self.estimates if e.direction == direction and e.color in colors]
+
+        return sorted(estimates, key=lambda e: e.mins)
+
+
+class BartDepartures:
+    def __init__(self,
+                 api_key: str,
+                 station: str) -> None:
+        self.api_key = api_key
+        self.station = station  # List of statation codes: https://api.bart.gov/docs/overview/abbrev.aspx
+        self.url = "http://api.bart.gov/api/etd.aspx?cmd=etd&orig={station}&key={api_key}&json=y".format(
+            station=self.station, api_key=self.api_key)
+
+    def get_station_data(self) -> StationData:
         try:
-            url = "http://api.bart.gov/api/etd.aspx?cmd=etd&orig={}&key=ZXRM-PLTK-9IBT-DWEI&json=y".format(self.station)
-            logging.info("Requesting Bart departures from: {}".format(url))
-            r = requests.get(url)
-            if self.debug:
-                print(url)
+            logging.info("Requesting Bart departures from: {}".format(self.url))
+            r = requests.get(self.url)
             if r.status_code == 200:
-                j = r.json()
-                station_data = j['root']['station'][0]['etd']
-                try:
-                    return self.get_next_departures(station_data)
-                except Exception:
-                    return "--"
-        except requests.exceptions.RequestException as e:
+                return StationData(r.json()['root']['station'][0]['etd'])
+        except Exception as e:
             logging.error("Could not get departure times from Bart: {}".format(e))
             pass
-
-        return
-
-    def get_all_departures(self, station_data):
-        mins_with_colors = []
-        for item in station_data:
-            estimate = item['estimate']
-            for e in estimate:
-                color = e.get('color')
-                if e.get('direction') == self.direction:
-                    mins = e.get('minutes')
-                    if not mins == 'Leaving':
-                        train = {}
-                        train['color'] = color
-                        train['mins'] = e.get('minutes')
-                        mins_with_colors.append(train)
-
-        if self.debug:
-            print(mins_with_colors)
-
-        logging.info('Found {} trains in right direction'.format(len(mins_with_colors)))
-
-        if self.only_sf_bound:
-            return self.make_list_of_trains_sf_only(mins_with_colors)
-
-        return self.make_list_of_trains(mins_with_colors)
-
-    @staticmethod
-    def make_list_of_trains_sf_only(mins_with_colors: typing.List):
-        return [item.get('mins') for item in mins_with_colors if item.get('color') in ('YELLOW', 'RED', 'WHITE')]
-
-    @staticmethod
-    def make_list_of_trains(mins_with_colors: typing.List):
-        return [item.get('mins') for item in mins_with_colors]
-
-    def get_next_departures(self, station_data):
-        minutes = self.get_all_departures(station_data)
-        if self.debug:
-            print('walking time:', self.walking_time,
-                  'number of trains:', self.number_of_trains)
-        mins_in_walking_time = [m for m in minutes if int(m) - self.walking_time > 0]
-        logging.info('Trains in walking time: {}'.format(len(mins_in_walking_time)))
-        mins_in_walking_time.sort()
-        if len(mins_in_walking_time) < self.number_of_trains:
-            return mins_in_walking_time
-        else:
-            return mins_in_walking_time[:self.number_of_trains]

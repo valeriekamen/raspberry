@@ -1,7 +1,3 @@
-# raspberry
-Raspberry Pi script
-
-
 # Display.py
 Scrolls weather for Oakland, CA and BART arrival times for MacArthur Station
 

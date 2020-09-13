@@ -4,11 +4,7 @@ import logging
 import os
 import time
 import typing
-
-if os.uname().sysname == 'Linux':
-    import scrollphat
-elif os.uname().sysname == 'Darwin':
-    import fake_scrollphat as scrollphat
+import scrollphat
 
 
 def scroll_message_once():
